@@ -1,3 +1,4 @@
+from collections import defaultdict
 import sys
 
 filepath = sys.argv[1]
@@ -26,50 +27,36 @@ def step(secret):
     secret = step_3(secret)
     return secret
 
+def price(secret):
+    return secret%10
 
-prices = []
-changes = []
-changes_to_prices = []
+bananas_by_change = defaultdict(int)
+best_payout = 0
+best_seq = None
 
 result = 0
 for secret in initial:
     i = secret
-    p, c = [], []
-    c2p = {}
+    changes = []
+    changes_seen = set()
     for _ in range(2000):
-        prev_p = secret%10
+        prev_p = price(secret)
         secret = step(secret)
-        price = secret%10
-        p.append(price)
-        change = p[-1]-prev_p
-        c.append(change)
-        if len(c) >= 4:
-            c4 = tuple(c[-4:])
-            if c4 not in c2p:
-                c2p[c4] = price
+        new_price = price(secret)
+        change = new_price-prev_p
+        changes.append(change)
+        if len(changes) >= 4:
+            c4 = tuple(changes[-4:])
+            if c4 not in changes_seen:
+                bananas_by_change[c4] += new_price
+                changes_seen.add(c4)
     if filepath != "input":
         print(f"{i}: {secret}")
     result += secret
-    prices.append(p)
-    changes.append(c)
-    changes_to_prices.append(c2p)
 print()
 
 print("Part 1:", result)
 
-all_sequences = set()
-for _c2p in changes_to_prices:
-    all_sequences |= _c2p.keys()
-
-best_payout = 0
-best_seq = None
-for seq in all_sequences:
-    payout = sum(
-        _c2p.get(seq, 0) for _c2p in changes_to_prices
-    )
-    if payout > best_payout:
-        best_payout = payout
-        best_seq = seq
-
+best_payout = max(bananas_by_change.values())
 print("Part 2:", best_payout)
 
